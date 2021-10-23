@@ -1,6 +1,17 @@
-# log\_method - Replacement for `Rails.logger.info` that allows adding more useful context in log messages
+# log\_method - a better way to log better stuff
 
 [![<sustainable-rails>](https://circleci.com/gh/sustainable-rails/log_method.svg?style=shield)](https://app.circleci.com/pipelines/github/sustainable-rails/log_method)
+
+Instead of `Rails.logger.info`, use `log «method_name»,«context object»,«message»`, and the following will be logged:
+
+* Your log message
+* The class where `log` was called
+* The method name you pass in
+* The class and id of the context object
+* Any trace or request id you have configured
+* Any current user id you have configured
+
+This will result in more useful log messages that are easier to construct.
 
 ## Install
 
@@ -25,13 +36,24 @@ class SomeClass
 end
 ```
 
-`log` will include *a lot* more than the message you provided.  On one line, you'll get:
+Assuming you have configured trace ids and current user id (see below for how), this is what your log message will look like (assuming the id of `some_active_record` is 42):
 
-* The class and method where log was called (note that the method is not deduced but passed in as the first arg [see philosophy below])
-* The class of `some_active_record` and its ID.
-* The message
-* A trace or request id, if you've configured it (see below)
-* The current user id, if you've configured it (see below)
+```
+[SomeClass#some_method](via LogMethod::Log) trace_id:7efa5401-08d8-44e3-b101-d5806563a3da current_user_id:42 [User:7889]: Beginnging the operation
+```
+
+Let's break down each part and understand why it's there, which will help you understand why you should use this gem:
+
+* `[SomeClass#some_method]` - this gives the class and method where the log statement originated. Super helpful when looking at log output and
+trying to find what code generated that log message.
+* `(via LogMethod::Log)` - This makes it clear that *this* gem produced this ouput. If you don't see this, it means something else is generating
+log output, too.  Very handy for understanding the source of your log statemlents.
+* `trace_id:7efa5401-08d8-44e3-b101-d5806563a3da` - If you set a trace id at the start of a web request, or when you queue a background job, you
+can then trace all log statements related to that request. SUPER handy for understanding what all happened in a given request you are looking at.
+* `current_user_id:42` - System behavior often depends on who is logged in or who the "current actor" is. So you want this in your log.
+* `[SomeActiveRecord:7889]:` - Almost always, code is operating on some object or operating in the context of some object.  It's nice to know
+exactly which one.
+* `Beginnging the operation` - And, of course, your log message
 
 ### `log` method, explained
 
@@ -47,35 +69,19 @@ depends on what `some_object` is:
 The second form is the one you should prefer whenever you have an Active Record in context, because that's how you can automatically get the class
 and ID into the log so you know what data was being operated on.
 
-### Example log message
-
-The example above uses this invocation:
-
-```ruby
-log :some_method, some_active_record, "Beginning the operation"
-```
-
-Let's suppose that `some_active_record` is a `User` with the ID of 789.  Let's also suppose we have configured trace ids *and* we have configured the actor ID to pull
-from the currently logged-in user.  In this case, let's suppose that user has the ID of 42.  Here is what the message will look like:
-
-```
-[SomeClass#some_method](via LogMethod::Log) trace_id:7efa5401-08d8-44e3-b101-d5806563a3da current_user_id:42 [User:7889]: Beginnging the operation
-```
-
-You see the class and method, but also the `via LogMethod::Log` is a reminder of what produced this message in the format you find it.  This allows
-you to unambiguously understand what messages in your log came from this library and which did not.
-
 ### Cool, but I gotta put that `include` in every class?
 
 I would recommend putting the `include` line in:
 
 * `ApplicationController`
 * `ApplicationJob`
-* Whatever base class you use for your service layer, and you should use one.
+* Whatever base class you use for your service layer (you should be using one).
+* Any other "base" class for logic.
 
-If you are putting business logic in your Active Records, you probably want to use the `include` line in `ApplicationRecord` as well.
+If you are putting business logic in your Active Records, you probably want to use the `include` line in `ApplicationRecord` as well. If you are
+not putting business logic in Active Records, there's nothing to log, so I would not include this.
 
-## Why?
+## Why can't I just `Rails.logger.info`?
 
 Almost every operation in your Rails app is operating on some piece of data, so it's extrmely useful to know what that piece of data was.  It's
 also extremely useful to know where in the codebase the message originated.  Lastly, the entire point of request ids/trace ids is to put them in
