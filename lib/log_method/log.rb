@@ -4,7 +4,8 @@ module LogMethod::Log
   end
 
   def log(method, message_or_object, message=nil)
-    trace_id = LogMethod.config.trace_id_proc.()
+
+    trace_id         = LogMethod.config.trace_id_proc.()
     current_actor_id = LogMethod.config.current_actor_proc.()
 
     message = if message.nil?
