@@ -46,8 +46,8 @@ Let's break down each part and understand why it's there, which will help you un
 
 * `[SomeClass#some_method]` - this gives the class and method where the log statement originated. Super helpful when looking at log output and
 trying to find what code generated that log message.
-* `(via LogMethod::Log)` - This makes it clear that *this* gem produced this ouput. If you don't see this, it means something else is generating
-log output, too.  Very handy for understanding the source of your log statemlents.
+* `(via LogMethod::Log)` - This makes it clear that *this* gem produced this output. If you don't see this, it means something else is generating
+log output, too.  Very handy for understanding the source of your log statements.
 * `trace_id:7efa5401-08d8-44e3-b101-d5806563a3da` - If you set a trace id at the start of a web request, or when you queue a background job, you
 can then trace all log statements related to that request. SUPER handy for understanding what all happened in a given request you are looking at.
 * `current_user_id:42` - System behavior often depends on who is logged in or who the "current actor" is. So you want this in your log.
@@ -83,7 +83,7 @@ not putting business logic in Active Records, there's nothing to log, so I would
 
 ## Why can't I just `Rails.logger.info`?
 
-Almost every operation in your Rails app is operating on some piece of data, so it's extrmely useful to know what that piece of data was.  It's
+Almost every operation in your Rails app is operating on some piece of data, so it's extremely useful to know what that piece of data was.  It's
 also extremely useful to know where in the codebase the message originated.  Lastly, the entire point of request ids/trace ids is to put them in
 log messages *and* it's nice to know who was logged in doing the operation.
 
@@ -119,7 +119,7 @@ end
 
 ### Options
 
-* `after_log_proc` This is a proc/lambda to be callied after each log message has been sent to `Rails.logger.info`.  In the example above, we're using this to send a breadcrumb to Bugsnag so that if there is an error with this request, we can see what log messages were logged for that request.  It will be given these arguments:
+* `after_log_proc` This is a proc/lambda to be called after each log message has been sent to `Rails.logger.info`.  In the example above, we're using this to send a breadcrumb to Bugsnag so that if there is an error with this request, we can see what log messages were logged for that request.  It will be given these arguments:
    - `class_thats_logging_name` - The class where `log` was called
    - `method_name` - The method name passed to `log`
    - `object_id` - The id of the object passed to `log`, if it had one
@@ -130,6 +130,41 @@ end
 * `current_actor_proc` - Called to retrieve an identifier of the current actor executing the code, such as the current user.
 * `external_identifier_method` - If you are using external ids on your objects, this is the name of that method. If an object is passed in that responds to this method, it will be used instead of `id` when creating the log message.
 * `trace_id_proc` - returns the current request's request ID, trace ID, or cross-request ID.  This is useful to tie various log messages together that were all part of a single request.
+
+### Helper Procs
+
+This gem also includes some helper procs to connect `log` with some common gems and uses cases.
+
+#### Bugsnag Breadcrumbs
+
+In the example above, we use `after_log_proc` to send a breadcrumb to Bugsnag.  This means that if we get an error in a request, Bugsnag will show
+all of our log statements as breadcrumbs, which can help understand what data and state was involved in the error.
+
+This proc is included in this gem and you can use it like so:
+
+```ruby
+# config/initializers/log_method.rb
+require "log_method/bugsnag_after_log"
+LogMethod.config do |c|
+  c.after_log_proc = LogMethod::BugsnagAfterLog
+end
+```
+
+#### PaperTrail whodunnit
+
+The [PaperTrail gem](https://github.com/paper-trail-gem/paper_trail) has support for storing an actor or user along with versions created on
+changes to the database.  It's common to unify your current user (e.g. from Devise) to the Paper Trail "whodunnit" so that you can always call
+`PaperTrail.request.whodunnit` to get the current actor or user.
+
+To use this for logging, this gem includes `LogMethod::PaperTrailCurrentActor` that you can set up like so:
+
+```ruby
+# config/initializers/log_method.rb
+require "log_method/paper_trail_current_actor"
+LogMethod.config do |c|
+  c.current_actor_proc = LogMethod::PaperTrailCurrentActor
+end
+```
 
 ### External IDs explained
 

@@ -1,70 +1,15 @@
 require "log_method"
-
+require "support/fake_rails"
+require "support/helper_classes"
 
 RSpec.describe LogMethod::Log do
 
-  # Don't want to have this gem depend on all of Rails just for testing
-  module Rails
-    def self.logger
-      Object.new
-    end
-  end
-  module ActiveRecord
-    class Base
-      def id
-        "fake id"
-      end
-    end
-  end
-
-  class ThingThatLogs
-    include LogMethod::Log
-  end
-
-  class ThingWithExternalId
-
-    attr_reader :external_id
-
-    def initialize(external_id)
-      @external_id = external_id
-    end
-  end
-
-  class ThingWithoutExternalId
-
-    def initialize(inspect_output)
-      @inspect_output = inspect_output
-    end
-
-    def inspect
-      @inspect_output
-    end
-  end
-
-  class SomeActiveRecord < ActiveRecord::Base
-    def initialize(id)
-      @id = id
-    end
-    def id
-      @id
-    end
-  end
-
-  module Bugsnag
-    def self.leave_breadcrumb(*)
-      Object.new
-    end
-    class Breadcrumbs
-      LOG_BREADCRUMB_TYPE = "LOG_BREADCRUMB_TYPE"
-    end
-  end
   describe "#log" do
     let(:logger) { double("Logger") }
 
     before do
       allow(Rails).to receive(:logger).and_return(logger)
       allow(logger).to receive(:info)
-      allow(Bugsnag).to receive(:leave_breadcrumb)
 
       LogMethod.config.reset!
     end
