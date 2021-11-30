@@ -36,24 +36,20 @@ class SomeClass
 end
 ```
 
-Assuming you have configured trace ids and current user id (see below for how), this is what your log message will look like (assuming the id of `some_active_record` is 42):
+Assuming you have configured trace ids and current user id (see below for how), this is what your log message will look like (assuming the id of `current_user` is 42 and that `some_active_record` is a `Widget` with id 7889):
 
 ```
-[SomeClass#some_method](via LogMethod::Log) trace_id:7efa5401-08d8-44e3-b101-d5806563a3da current_user_id:42 [User:7889]: Beginnging the operation
+[SomeClass#some_method](via LogMethod::Log) trace_id:7efa5401-08d8-44e3-b101-d5806563a3da current_user_id:42 [Widget:7889]: Beginnging the operation
 ```
 
 Let's break down each part and understand why it's there, which will help you understand why you should use this gem:
 
-* `[SomeClass#some_method]` - this gives the class and method where the log statement originated. Super helpful when looking at log output and
-trying to find what code generated that log message.
-* `(via LogMethod::Log)` - This makes it clear that *this* gem produced this output. If you don't see this, it means something else is generating
-log output, too.  Very handy for understanding the source of your log statements.
-* `trace_id:7efa5401-08d8-44e3-b101-d5806563a3da` - If you set a trace id at the start of a web request, or when you queue a background job, you
-can then trace all log statements related to that request. SUPER handy for understanding what all happened in a given request you are looking at.
-* `current_user_id:42` - System behavior often depends on who is logged in or who the "current actor" is. So you want this in your log.
-* `[SomeActiveRecord:7889]:` - Almost always, code is operating on some object or operating in the context of some object.  It's nice to know
-exactly which one.
-* `Beginnging the operation` - And, of course, your log message
+* `[SomeClass#some_method]`                        -  this gives the class and method where the log statement originated. Super helpful when looking at log output and trying to find what code generated that log message.
+* `(via LogMethod::Log)`                           -  This makes it clear that *this* gem produced this output. If you don't see this, it means something else is generating log output, too.  Very handy for understanding the source of your log statements.
+* `trace_id:7efa5401-08d8-44e3-b101-d5806563a3da`  -  If you set a trace id at the start of a web request, or when you queue a background job, you can then trace all log statements related to that request. SUPER handy for understanding what all happened in a given request you are looking at.
+* `current_user_id:42`                             -  System behavior often depends on who is logged in or who the "current actor" is. So you want this in your log.
+* `[Widget:7889]:`                                 -  Code is almost always operating on some object or operating in the context of some object.  It's nice to know exactly which one.
+* `Beginnging the operation`                       -  And, of course, your log message
 
 ### `log` method, explained
 
