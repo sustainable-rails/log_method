@@ -1,5 +1,5 @@
 class LogMethod::BugsnagAfterLog
-  def self.call(class_thats_logging_name, method_name, object_id, object_class_name, trace_id, current_actor_id)
+  def self.call(class_thats_logging_name, method_name, object_id, object_class_name, trace_id, current_actor_id, _log_message)
     Bugsnag.leave_breadcrumb method_name.to_s[0..29], {
       class: class_thats_logging_name,
       object_id: object_id,

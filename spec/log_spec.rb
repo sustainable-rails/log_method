@@ -61,14 +61,16 @@ RSpec.describe LogMethod::Log do
           object_class_name_received        = nil
           trace_id_received                 = nil
           current_actor_id_received         = nil
+          log_message_received              = nil
 
-          LogMethod.config.after_log_proc = ->(class_thats_logging_name, method_name, object_id, object_class_name, trace_id, current_actor_id) {
+          LogMethod.config.after_log_proc = ->(class_thats_logging_name, method_name, object_id, object_class_name, trace_id, current_actor_id, log_message) {
             class_thats_logging_name_received = class_thats_logging_name
             method_name_received              = method_name
             object_id_received                = object_id
             object_class_name_received        = object_class_name
             trace_id_received                 = trace_id
             current_actor_id_received         = current_actor_id
+            log_message_received              = log_message
           }
 
           object = ThingThatLogs.new
@@ -80,11 +82,72 @@ RSpec.describe LogMethod::Log do
             expect(object_class_name_received).to eq(nil)
             expect(trace_id_received).to eq(nil)
             expect(current_actor_id_received).to eq(nil)
+            expect(log_message_received).to eq("this is a test message")
           end
         end
       end
       context "object given, trace id set up, current actor set up" do
         it "calls the proc with all info" do
+          class_thats_logging_name_received = nil
+          method_name_received              = nil
+          object_id_received                = nil
+          object_class_name_received        = nil
+          trace_id_received                 = nil
+          current_actor_id_received         = nil
+          log_message_received              = nil
+
+          LogMethod.config.trace_id_proc      = ->() { "some trace id" }
+          LogMethod.config.current_actor_proc = ->() { "some user id" }
+          LogMethod.config.after_log_proc = ->(class_thats_logging_name, method_name, object_id, object_class_name, trace_id, current_actor_id, log_message) {
+            class_thats_logging_name_received = class_thats_logging_name
+            method_name_received              = method_name
+            object_id_received                = object_id
+            object_class_name_received        = object_class_name
+            trace_id_received                 = trace_id
+            current_actor_id_received         = current_actor_id
+            log_message_received              = log_message
+          }
+
+          object = ThingThatLogs.new
+          object.log :some_method, SomeActiveRecord.new(42), "this is a test message"
+          aggregate_failures do
+            expect(class_thats_logging_name_received).to eq(ThingThatLogs.name)
+            expect(method_name_received).to eq(:some_method)
+            expect(object_id_received).to eq(42)
+            expect(object_class_name_received).to eq(SomeActiveRecord.name)
+            expect(trace_id_received).to eq("some trace id")
+            expect(current_actor_id_received).to eq("some user id")
+            expect(log_message_received).to eq("this is a test message")
+          end
+        end
+      end
+      context "object with external id given" do
+        it "calls the proc with the external id" do
+          class_thats_logging_name_received = nil
+          method_name_received              = nil
+          object_id_received                = nil
+          object_class_name_received        = nil
+
+          LogMethod.config.external_identifier_method = :external_id
+          LogMethod.config.after_log_proc = ->(class_thats_logging_name, method_name, object_id, object_class_name, _trace_id, _current_actor_id,log_message) {
+            class_thats_logging_name_received = class_thats_logging_name
+            method_name_received              = method_name
+            object_id_received                = object_id
+            object_class_name_received        = object_class_name
+          }
+
+          object = ThingThatLogs.new
+          object.log :some_method, ThingWithExternalId.new("some external id"), "this is a test message"
+          aggregate_failures do
+            expect(class_thats_logging_name_received).to eq(ThingThatLogs.name)
+            expect(method_name_received).to eq(:some_method)
+            expect(object_id_received).to eq("some external id")
+            expect(object_class_name_received).to eq(ThingWithExternalId.name)
+          end
+        end
+      end
+      context "proc doesn't accept all params" do
+        it "still works OK" do
           class_thats_logging_name_received = nil
           method_name_received              = nil
           object_id_received                = nil
@@ -112,31 +175,6 @@ RSpec.describe LogMethod::Log do
             expect(object_class_name_received).to eq(SomeActiveRecord.name)
             expect(trace_id_received).to eq("some trace id")
             expect(current_actor_id_received).to eq("some user id")
-          end
-        end
-      end
-      context "object with external id given" do
-        it "calls the proc with the external id" do
-          class_thats_logging_name_received = nil
-          method_name_received              = nil
-          object_id_received                = nil
-          object_class_name_received        = nil
-
-          LogMethod.config.external_identifier_method = :external_id
-          LogMethod.config.after_log_proc = ->(class_thats_logging_name, method_name, object_id, object_class_name, _trace_id, _current_actor_id) {
-            class_thats_logging_name_received = class_thats_logging_name
-            method_name_received              = method_name
-            object_id_received                = object_id
-            object_class_name_received        = object_class_name
-          }
-
-          object = ThingThatLogs.new
-          object.log :some_method, ThingWithExternalId.new("some external id"), "this is a test message"
-          aggregate_failures do
-            expect(class_thats_logging_name_received).to eq(ThingThatLogs.name)
-            expect(method_name_received).to eq(:some_method)
-            expect(object_id_received).to eq("some external id")
-            expect(object_class_name_received).to eq(ThingWithExternalId.name)
           end
         end
       end
