@@ -100,7 +100,7 @@ LogMethod.config do |c|
   c.external_identifier_method = :external_id
   c.current_actor_proc = ->() { PaperTrail.request.whodunnit }
   c.current_actor_id_label = "user_id"
-  c.after_log_proc = ->(class_thats_logging_name, method_name, object_id, object_class_name, trace_id, current_actor_id) {
+  c.after_log_proc = ->(class_thats_logging_name, method_name, object_id, object_class_name, trace_id, current_actor_id, log_message) {
     Bugsnag.leave_breadcrumb method_name.to_s[0..29], {
       class: class_thats_logging_name,
       object_id: object_id,
@@ -115,13 +115,14 @@ end
 
 ### Options
 
-* `after_log_proc` This is a proc/lambda to be called after each log message has been sent to `Rails.logger.info`.  In the example above, we're using this to send a breadcrumb to Bugsnag so that if there is an error with this request, we can see what log messages were logged for that request.  It will be given these arguments:
+* `after_log_proc` This is a proc/lambda to be called after each log message has been sent to `Rails.logger.info`.  In the example above, we're using this to send a breadcrumb to Bugsnag so that if there is an error with this request, we can see what log messages were logged for that request.  It will be given these arguments and it must accept and require all 7 or none will be passed:
    - `class_thats_logging_name` - The class where `log` was called
    - `method_name` - The method name passed to `log`
    - `object_id` - The id of the object passed to `log`, if it had one
    - `object_class_name` - The class name of the object passed to log, if one was passed
    - `trace_id` - The trace id returned by `trace_id_proc`, or `nil` if that isn't configured.
    - `current_actor_id` - The value returned by; `current_actor_proc`, or `nil` if that isn't configured.
+   - `log_message` - the log message passed to `log`
 * `current_actor_id_label` - If a current actor is logged, this is the label that will precede it in the logs
 * `current_actor_proc` - Called to retrieve an identifier of the current actor executing the code, such as the current user.
 * `external_identifier_method` - If you are using external ids on your objects, this is the name of that method. If an object is passed in that responds to this method, it will be used instead of `id` when creating the log message.

@@ -8,29 +8,44 @@ module LogMethod::Log
     trace_id         = LogMethod.config.trace_id_proc.()
     current_actor_id = LogMethod.config.current_actor_proc.()
 
-    message = if message.nil?
-                message_or_object
-              else
-                object_id,object_class = if !logging_external_identifier_method.nil? &&
-                                            message_or_object.respond_to?(logging_external_identifier_method)
+    object_identifier_phrase = ""
 
-                                           [message_or_object.send(logging_external_identifier_method), message_or_object.class]
+    if message.nil?
+      message = message_or_object
+    else
+      object_id,object_class = if !logging_external_identifier_method.nil? &&
+                                   message_or_object.respond_to?(logging_external_identifier_method)
 
-                                         elsif message_or_object.kind_of?(ActiveRecord::Base)
+                                 [message_or_object.send(logging_external_identifier_method), message_or_object.class]
 
-                                           [message_or_object.id, message_or_object.class]
+                               elsif message_or_object.kind_of?(ActiveRecord::Base)
 
-                                         else
+                                 [message_or_object.id, message_or_object.class]
 
-                                           [message_or_object.inspect, message_or_object.class]
+                               else
 
-                                         end
-                "[#{object_class}/#{object_id}]: #{message}"
-              end
+                                 [message_or_object.inspect, message_or_object.class]
 
-    Rails.logger.info("[#{self.class}##{method}](via LogMethod::Log)#{format_trace_id(trace_id)}#{format_current_actor_id(current_actor_id)}: #{message}")
+                               end
+      object_identifier_phrase = "[#{object_class}/#{object_id}]: "
+    end
 
-    LogMethod.config.after_log_proc.(self.class.name, method, object_id, object_class&.name, trace_id, current_actor_id)
+    Rails.logger.info("[#{self.class}##{method}](via LogMethod::Log)#{format_trace_id(trace_id)}#{format_current_actor_id(current_actor_id)}: #{object_identifier_phrase}#{message}")
+
+    all_args = [self.class.name, method, object_id, object_class&.name, trace_id, current_actor_id, message]
+
+    after_log_proc = LogMethod.config.after_log_proc
+    arity = if after_log_proc.kind_of?(Proc)
+              after_log_proc.arity
+            elsif after_log_proc.respond_to?(:call)
+              after_log_proc.method(:call).arity
+            end
+    args_for_arity = if arity <= 0
+                       []
+                     else
+                       all_args[0..(arity-1)]
+                     end
+    after_log_proc.(*args_for_arity)
   end
 
 private
