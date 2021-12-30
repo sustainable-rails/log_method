@@ -123,7 +123,9 @@ end
    - `trace_id` - The trace id returned by `trace_id_proc`, or `nil` if that isn't configured.
    - `current_actor_id` - The value returned by; `current_actor_proc`, or `nil` if that isn't configured.
    - `log_message` - the log message passed to `log`
-* `current_actor_id_label` - If a current actor is logged, this is the label that will precede it in the logs
+
+   You can also pass an array of proc/lambdas and all of them will be called in order given.
+* `current_actor_id_label` - If a current actor is logged, this is the label that will precede it in the logs. Default is `current_actor_id`.
 * `current_actor_proc` - Called to retrieve an identifier of the current actor executing the code, such as the current user.
 * `external_identifier_method` - If you are using external ids on your objects, this is the name of that method. If an object is passed in that responds to this method, it will be used instead of `id` when creating the log message.
 * `trace_id_proc` - returns the current request's request ID, trace ID, or cross-request ID.  This is useful to tie various log messages together that were all part of a single request.
@@ -146,6 +148,37 @@ LogMethod.config do |c|
   c.after_log_proc = LogMethod::BugsnagAfterLog
 end
 ```
+
+It will log the method name as the breadcrumb (truncating to avoid Bugsnag's limits) and set these attributes:
+
+* `class` - The name of the class that logged the message
+* `object_id` - The id of the object passed, based on documentation above
+* `object_class` - The name of the class of the object passed
+* `trace_id` - The trace id, if configured and available
+* `current_actor_id` - The id of the current actor, if configured and available. Note that this will respect the `current_actor_id_label`, so if
+you have that set to `user_id`, `user_id` is used here instead of `current_actor_id`.
+
+#### OpenTelementry Events
+
+You can use `LogMethod::OpenTelemetryAfterLog` to send each log method as a wide event to your Open Telementry provider (e.g. Honeycomb):
+
+```ruby
+# config/initializers/log_method.rb
+require "log_method/open_telemetry_after_log"
+LogMethod.config do |c|
+  c.after_log_proc = LogMethod::OpenTelemetryAfterLog
+end
+```
+
+This will send an event whose message is the same as your log message, along with these attributes:
+
+* `log_method.class_name` - class that logged the message
+* `log_method.method_name` - method passed to `log`
+* `log_method.object_id` - object ID as described above
+* `log_method.object_class_name` - class name of the passed object
+* `app.trace_id` - trace id, if configured and available
+* `app.current_actor_id` - current actor id, if configured and available. note that if you have configured `current_actor_id_label`, that will be
+used here instead, so if if you've set it to `user_id`, this attribute will be named `app.user_id`.
 
 #### PaperTrail whodunnit
 

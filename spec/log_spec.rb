@@ -178,6 +178,51 @@ RSpec.describe LogMethod::Log do
           end
         end
       end
+      context "assigning an array" do
+        it "calls all of them" do
+          class_thats_logging_name_received = []
+          method_name_received              = []
+          object_id_received                = []
+          object_class_name_received        = []
+          trace_id_received                 = []
+          current_actor_id_received         = []
+          log_message_received              = []
+
+          LogMethod.config.trace_id_proc      = ->() { "some trace id" }
+          LogMethod.config.current_actor_proc = ->() { "some user id" }
+          proc1 = ->(class_thats_logging_name, method_name, object_id, object_class_name, trace_id, current_actor_id, log_message) {
+            class_thats_logging_name_received << class_thats_logging_name
+            method_name_received              << method_name
+            object_id_received                << object_id
+            object_class_name_received        << object_class_name
+            trace_id_received                 << trace_id
+            current_actor_id_received         << current_actor_id
+            log_message_received              << log_message
+          }
+          proc2 = ->(class_thats_logging_name, method_name, object_id, object_class_name, trace_id, current_actor_id, log_message) {
+            class_thats_logging_name_received << class_thats_logging_name
+            method_name_received              << method_name
+            object_id_received                << object_id
+            object_class_name_received        << object_class_name
+            trace_id_received                 << trace_id
+            current_actor_id_received         << current_actor_id
+            log_message_received              << log_message
+          }
+          LogMethod.config.after_log_proc = [ proc1, proc2 ]
+
+          object = ThingThatLogs.new
+          object.log :some_method, SomeActiveRecord.new(42), "this is a test message"
+          aggregate_failures do
+            expect(class_thats_logging_name_received).to eq( [ ThingThatLogs.name, ThingThatLogs.name ])
+            expect(method_name_received).to eq( [ :some_method, :some_method ])
+            expect(object_id_received).to eq( [ 42, 42 ])
+            expect(object_class_name_received).to eq( [ SomeActiveRecord.name, SomeActiveRecord.name ])
+            expect(trace_id_received).to eq( [ "some trace id", "some trace id" ])
+            expect(current_actor_id_received).to eq( [ "some user id", "some user id" ])
+            expect(log_message_received).to eq( [ "this is a test message", "this is a test message" ])
+          end
+        end
+      end
     end
     context "using current_actor_proc" do
       context "using current_actor_id_label" do

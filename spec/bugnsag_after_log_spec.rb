@@ -36,7 +36,26 @@ RSpec.describe LogMethod::BugsnagAfterLog do
           object_id: 42,
           object_class: SomeActiveRecord.name,
           trace_id: "some trace id",
-          admin_user_id: "some actor id",
+          current_actor_id: "some actor id",
+        },
+        Bugsnag::Breadcrumbs::LOG_BREADCRUMB_TYPE
+      )
+    end
+    it "calls uses the configured current_actor_id_label instead of current_actor_id, if set" do
+      LogMethod.config.trace_id_proc = ->() { "some trace id" }
+      LogMethod.config.current_actor_proc = ->() { "some actor id" }
+      LogMethod.config.current_actor_id_label = "user_id"
+
+      ThingThatLogs.new.log :some_method, SomeActiveRecord.new(42), "test message"
+
+      expect(Bugsnag).to have_received(:leave_breadcrumb).with(
+        "some_method",
+        {
+          class: ThingThatLogs.name,
+          object_id: 42,
+          object_class: SomeActiveRecord.name,
+          trace_id: "some trace id",
+          user_id: "some actor id",
         },
         Bugsnag::Breadcrumbs::LOG_BREADCRUMB_TYPE
       )
