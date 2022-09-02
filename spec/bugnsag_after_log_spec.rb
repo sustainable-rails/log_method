@@ -14,11 +14,12 @@ RSpec.describe LogMethod::BugsnagAfterLog do
     end
   end
   describe "#call" do
-    let(:logger) { double("Logger") }
+
+    let(:logger) { Logger.new(StringIO.new) }
+
     before do
       allow(Bugsnag).to receive(:leave_breadcrumb)
-      allow(Rails).to receive(:logger).and_return(logger)
-      allow(logger).to receive(:info)
+      allow(Logger).to receive(:new).and_return(logger)
 
       LogMethod.config.reset!
       LogMethod.config.after_log_proc = LogMethod::BugsnagAfterLog
