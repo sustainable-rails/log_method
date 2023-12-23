@@ -39,7 +39,7 @@ end
 Assuming you have configured trace ids and current user id (see below for how), this is what your log message will look like (assuming the id of `current_user` is 42 and that `some_active_record` is a `Widget` with id 7889):
 
 ```
-[SomeClass#some_method](via LogMethod::Log) trace_id:7efa5401-08d8-44e3-b101-d5806563a3da current_user_id:42 [Widget:7889]: Beginnging the operation
+[SomeClass#some_method](via LogMethod::Log) trace_id:7efa5401-08d8-44e3-b101-d5806563a3da current_user_id:42 [Widget:7889]: Beginning the operation
 ```
 
 Let's break down each part and understand why it's there, which will help you understand why you should use this gem:
@@ -49,7 +49,7 @@ Let's break down each part and understand why it's there, which will help you un
 * `trace_id:7efa5401-08d8-44e3-b101-d5806563a3da`  -  If you set a trace id at the start of a web request, or when you queue a background job, you can then trace all log statements related to that request. SUPER handy for understanding what all happened in a given request you are looking at.
 * `current_user_id:42`                             -  System behavior often depends on who is logged in or who the "current actor" is. So you want this in your log.
 * `[Widget:7889]:`                                 -  Code is almost always operating on some object or operating in the context of some object.  It's nice to know exactly which one.
-* `Beginnging the operation`                       -  And, of course, your log message
+* `Beginning the operation`                       -  And, of course, your log message
 
 ### `log` method, explained
 
