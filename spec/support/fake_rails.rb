@@ -1,7 +1,11 @@
-# Don't want to have this gem depend on all of Rails just for testing
+require "active_support/tagged_logging"
+major,minor,_ = RUBY_VERSION.split(/\./).map(&:to_i)
+if (major > 2) || ((major == 2) && (minor > 6))
+  require "active_support/isolated_execution_state"
+end
 module Rails
   def self.logger
-    Object.new
+    ActiveSupport::TaggedLogging.new(Logger.new($stdout))
   end
 end
 module ActiveRecord

@@ -5,11 +5,11 @@ require "support/helper_classes"
 RSpec.describe LogMethod::Log do
 
   describe "#log" do
-    let(:logger) { double("Logger") }
+    let(:log_dev) { StringIO.new }
+    let(:logger) { Logger.new(log_dev, level: :info, progname: "rspec") }
 
     before do
-      allow(Rails).to receive(:logger).and_return(logger)
-      allow(logger).to receive(:info)
+      allow(Logger).to receive(:new).and_return(logger)
 
       LogMethod.config.reset!
     end
@@ -21,9 +21,9 @@ RSpec.describe LogMethod::Log do
           object.log :some_method, "this is a test message"
 
           aggregate_failures do
-            expect(logger).to have_received(:info).with(/ThingThatLogs/)
-            expect(logger).to have_received(:info).with(/some_method/)
-            expect(logger).to have_received(:info).with(/this is a test message/)
+            expect(log_dev.string).to match(/ThingThatLogs/)
+            expect(log_dev.string).to match(/some_method/)
+            expect(log_dev.string).to match(/this is a test message/)
           end
         end
       end
@@ -34,7 +34,7 @@ RSpec.describe LogMethod::Log do
             object.log :some_method, SomeActiveRecord.new(999), "this is a test message"
 
             aggregate_failures do
-              expect(logger).to have_received(:info).with(/SomeActiveRecord\/999/)
+              expect(log_dev.string).to match(/SomeActiveRecord\/999/)
             end
           end
         end
@@ -46,7 +46,7 @@ RSpec.describe LogMethod::Log do
             object.log :some_method, ThingWithoutExternalId.new(inspect_output), "this is a test message"
 
             aggregate_failures do
-              expect(logger).to have_received(:info).with(/ThingWithoutExternalId\/#{Regexp.escape(inspect_output)}/)
+              expect(log_dev.string).to match(/ThingWithoutExternalId\/#{Regexp.escape(inspect_output)}/)
             end
           end
         end
@@ -232,7 +232,7 @@ RSpec.describe LogMethod::Log do
 
           object = ThingThatLogs.new
           object.log :some_method, "this is a test message"
-          expect(logger).to have_received(:info).with(/user_id:some actor id/)
+          expect(log_dev.string).to match(/user_id:some actor id/)
         end
       end
       context "default current_actor_id_label" do
@@ -241,7 +241,7 @@ RSpec.describe LogMethod::Log do
 
           object = ThingThatLogs.new
           object.log :some_method, "this is a test message"
-          expect(logger).to have_received(:info).with(/current_actor_id:some actor id/)
+          expect(log_dev.string).to match(/current_actor_id:some actor id/)
         end
       end
     end
@@ -251,7 +251,7 @@ RSpec.describe LogMethod::Log do
 
         object = ThingThatLogs.new
         object.log :some_method, ThingWithExternalId.new("foobar id"), "this is a test message"
-        expect(logger).to have_received(:info).with(/foobar id/)
+        expect(log_dev.string).to match(/foobar id/)
       end
     end
     context "using trace_id_proc" do
@@ -260,7 +260,7 @@ RSpec.describe LogMethod::Log do
 
         object = ThingThatLogs.new
         object.log :some_method, "this is a test message"
-        expect(logger).to have_received(:info).with(/some trace id/)
+        expect(log_dev.string).to match(/some trace id/)
       end
     end
   end

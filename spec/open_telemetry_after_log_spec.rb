@@ -29,10 +29,9 @@ RSpec.describe LogMethod::OpenTelemetryAfterLog do
   end
 
   describe "#call" do
-    let(:logger) { double("Logger") }
+    let(:logger) { Logger.new(StringIO.new) }
     before do
-      allow(Rails).to receive(:logger).and_return(logger)
-      allow(logger).to receive(:info)
+      allow(Logger).to receive(:new).and_return(logger)
       LogMethod.config.reset!
       LogMethod.config.after_log_proc = LogMethod::OpenTelemetryAfterLog
     end

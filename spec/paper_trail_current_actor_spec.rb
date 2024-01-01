@@ -12,11 +12,11 @@ RSpec.describe LogMethod::PaperTrailCurrentActor do
     end
   end
   describe "#call" do
-    let(:logger) { double("Logger") }
+    let(:log_dev) { StringIO.new }
+    let(:logger) { Logger.new(log_dev, level: :info) }
     before do
       allow(Bugsnag).to receive(:leave_breadcrumb)
-      allow(Rails).to receive(:logger).and_return(logger)
-      allow(logger).to receive(:info)
+      allow(Logger).to receive(:new).and_return(logger)
 
       LogMethod.config.reset!
       LogMethod.config.current_actor_proc = LogMethod::PaperTrailCurrentActor
@@ -25,7 +25,7 @@ RSpec.describe LogMethod::PaperTrailCurrentActor do
 
       ThingThatLogs.new.log :some_method, "test message"
 
-      expect(logger).to have_received(:info).with(/current_actor_id:some actor id/)
+      expect(log_dev.string).to match(/current_actor_id:some actor id/)
     end
   end
 end
